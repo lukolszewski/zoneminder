@@ -1,0 +1,138 @@
+FROM debian:13-slim
+
+LABEL maintainer="ZoneMinder"
+LABEL description="ZoneMinder runtime for Debian Trixie"
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+ENV TZ=UTC
+
+# Install runtime dependencies (versions for Debian 13 Trixie)
+# Based on actual zoneminder .deb package dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Web server and PHP
+    apache2 \
+    libapache2-mod-php \
+    php \
+    php-mysql \
+    php-gd \
+    php-curl \
+    php-intl \
+    php-apcu \
+    php-xml \
+    # FFmpeg and media libs
+    ffmpeg \
+    libavcodec61 \
+    libavdevice61 \
+    libavformat61 \
+    libavutil59 \
+    libswresample5 \
+    libswscale8 \
+    libvlc5 \
+    libvlccore9 \
+    libvncclient1 \
+    libjpeg62-turbo \
+    # Database and networking
+    libmariadb3 \
+    libcurl3t64-gnutls \
+    libcurl4-gnutls-dev \
+    libjwt-gnutls2 \
+    libgsoap-2.8.135 \
+    libmosquittopp1 \
+    libpcre2-8-0 \
+    libssl3t64 \
+    mariadb-client \
+    # System utilities
+    sudo \
+    pkexec \
+    polkitd \
+    rsyslog \
+    procps \
+    net-tools \
+    iproute2 \
+    arp-scan \
+    zip \
+    ca-certificates \
+    tzdata \
+    curl \
+    # JavaScript and docs (for zoneminder-doc)
+    javascript-common \
+    libjs-jquery \
+    libjs-sphinxdoc \
+    sphinx-rtd-theme-common \
+    python3-sphinx-rtd-theme \
+    # Perl and modules
+    perl \
+    libdbi-perl \
+    libdbd-mysql-perl \
+    libdate-manip-perl \
+    libdatetime-perl \
+    libwww-perl \
+    liburi-perl \
+    libsys-mmap-perl \
+    libjson-maybexs-perl \
+    libdata-uuid-perl \
+    libcrypt-eksblowfish-perl \
+    libdata-entropy-perl \
+    libmime-lite-perl \
+    libmime-tools-perl \
+    libphp-serialization-perl \
+    libmodule-load-conditional-perl \
+    libnet-sftp-foreign-perl \
+    libarchive-zip-perl \
+    libdevice-serialport-perl \
+    libimage-info-perl \
+    libio-interface-perl \
+    liburi-encode-perl \
+    libdata-dump-perl \
+    libclass-std-fast-perl \
+    libsoap-wsdl-perl \
+    libio-socket-multicast-perl \
+    libio-socket-ssl-perl \
+    libdigest-sha-perl \
+    libsys-cpu-perl \
+    libsys-meminfo-perl \
+    libnumber-bytes-human-perl \
+    libfile-slurp-perl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy .deb packages from builder
+COPY docker/packages/*.deb /tmp/packages/
+
+# Install ZoneMinder packages
+RUN dpkg -i /tmp/packages/*.deb || apt-get install -f -y \
+    && rm -rf /tmp/packages \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Enable Apache modules and ZoneMinder config
+RUN a2enmod rewrite cgi \
+    && a2enconf zoneminder 2>/dev/null || true
+
+# Create required directories
+RUN mkdir -p /var/run/zm \
+    && mkdir -p /var/log/zm \
+    && mkdir -p /var/cache/zoneminder/events \
+    && mkdir -p /var/cache/zoneminder/images \
+    && mkdir -p /var/cache/zoneminder/temp \
+    && chown -R www-data:www-data /var/cache/zoneminder \
+    && chown -R www-data:www-data /var/log/zm \
+    && chown -R www-data:www-data /var/run/zm
+
+# Copy entrypoint script
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Volumes for persistent data
+VOLUME ["/var/cache/zoneminder/events", "/var/cache/zoneminder/images", "/var/log/zm"]
+
+# Expose HTTP port
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost/zm/ || exit 1
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

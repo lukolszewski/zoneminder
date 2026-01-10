@@ -1,0 +1,60 @@
+services:
+  # Builder service - builds .deb packages
+  builder:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.builder
+    volumes:
+      - ./packages:/output
+    profiles:
+      - build
+
+  # MariaDB database
+  db:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: zmrootpass
+      MYSQL_DATABASE: zm
+      MYSQL_USER: zmuser
+      MYSQL_PASSWORD: zmpass
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ZoneMinder runtime
+  zoneminder:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.runtime
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ:-UTC}
+      ZM_DB_HOST: db
+      ZM_DB_PORT: 3306
+      ZM_DB_NAME: zm
+      ZM_DB_USER: zmuser
+      ZM_DB_PASS: zmpass
+    ports:
+      - "8080:80"
+    volumes:
+      - zm_events:/var/cache/zoneminder/events
+      - zm_images:/var/cache/zoneminder/images
+      - zm_logs:/var/log/zm
+    shm_size: 512m
+    devices:
+      - /dev/dri:/dev/dri  # Optional: for hardware acceleration
+
+volumes:
+  db_data:
+  zm_events:
+  zm_images:
+  zm_logs:
