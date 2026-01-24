@@ -820,7 +820,7 @@ class Filter extends ZM_Object {
         'Cause'       => translate('AttrCause'),
         'DiskBlocks'  => translate('AttrDiskBlocks'),
         'DiskPercent' => translate('AttrDiskPercent'),
-        #'StorageDiskSpace'   => translate('AttrStorageDiskSpace'),
+        'EventsDiskSpace' => translate('AttrEventsDiskSpace'),
         'DiskSpace'   => translate('AttrEventDiskSpace'),
         'CurrentDateTime' => translate('Current DateTime'),
         'CurrentDate' => translate('Current Date'),

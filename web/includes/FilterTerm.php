@@ -103,6 +103,7 @@ class FilterTerm {
         $value = '';
         break;
       case 'DiskPercent':
+      case 'EventsDiskSpace':
         $value = '';
         break;
       case 'Tags':
@@ -185,6 +186,7 @@ class FilterTerm {
       return ' EXISTS ';
     case 'ExistsInFileSystem':
     case 'DiskPercent':
+    case 'EventsDiskSpace':
       return '';
     }
 
@@ -234,6 +236,7 @@ class FilterTerm {
       return '/* AlarmedZoneId */ ';
     case 'ExistsInFileSystem':
     case 'DiskPercent':
+    case 'EventsDiskSpace':
       return 'TRUE /*'.$this->attr.'*/';
     case 'MonitorName':
       return 'M.Name';
@@ -422,6 +425,26 @@ class FilterTerm {
             Warning('Invalid op '.$this->op .' for DiskPercent.');
           }
         } # end foreach Storage Area
+      } else if ( $this->attr == 'EventsDiskSpace' ) {
+        $storage_areas = $this->filter->get_StorageAreas();
+        foreach ( $storage_areas as $storage ) {
+          $used = $storage->event_disk_space();
+          Debug($used. ' '.$this->op.'? '.$this->val);
+          switch ($this->op) {
+          case '=':
+            return ($used == $this->val);
+          case '>':
+            return ($used > $this->val);
+          case '<':
+            return ($used < $this->val);
+          case '<=':
+            return ($used <= $this->val);
+          case '>=':
+            return ($used >= $this->val);
+          default:
+            Warning('Invalid op '.$this->op .' for EventsDiskSpace.');
+          }
+        } # end foreach Storage Area
       } else if ( $this->attr == 'SystemLoad' ) {
         $string_to_eval = 'return getLoad() '.$this->op.' '.$this->val.';';
         try {
@@ -487,6 +510,8 @@ class FilterTerm {
         return true;
     if ( $this->attr == 'DiskBlocks' )
         return true;
+    if ( $this->attr == 'EventsDiskSpace' )
+        return true;
     return false;
   }
 
@@ -511,6 +536,7 @@ class FilterTerm {
       'DiskSpace',
       'DiskPercent',
       'DiskBlocks',
+      'EventsDiskSpace',
       'MonitorName',
       'Monitor',
       'ServerId',

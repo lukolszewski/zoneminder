@@ -97,6 +97,7 @@ $SLANG = array(
     'AttrDiskSpace'         => 'File System Disk Space',
     'AttrDiskBlocks'        => 'Disk Blocks',
     'AttrDiskPercent'       => 'Disk Percent',
+    'AttrEventsDiskSpace'   => 'Events Disk Space',
     'AttrDuration'          => 'Duration',
     'AttrFrames'            => 'Frames',
     'AttrId'                => 'Id',
