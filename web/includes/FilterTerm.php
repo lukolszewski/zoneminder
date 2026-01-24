@@ -420,6 +420,25 @@ class FilterTerm {
             Warning('Invalid op '.$this->op .' for DiskPercent.');
           }
         } # end foreach Storage Area
+      } else if ( $this->attr == 'DiskBlocks' ) {
+        $storage_areas = $this->filter->get_StorageAreas();
+        foreach ( $storage_areas as $storage ) {
+          Debug($storage->disk_used_blocks(). ' '.$this->op.'? '.$this->val);
+          switch ($this->op) {
+          case '=':
+            return ($storage->disk_used_blocks() == $this->val);
+          case '>':
+            return ($storage->disk_used_blocks() > $this->val);
+          case '<':
+            return ($storage->disk_used_blocks() < $this->val);
+          case '<=':
+            return ($storage->disk_used_blocks() <= $this->val);
+          case '>=':
+            return ($storage->disk_used_blocks() >= $this->val);
+          default:
+            Warning('Invalid op '.$this->op .' for DiskBlocks.');
+          }
+        }
       } else if ( $this->attr == 'SystemLoad' ) {
         $string_to_eval = 'return getLoad() '.$this->op.' '.$this->val.';';
         try {
@@ -458,7 +477,7 @@ class FilterTerm {
           return false;
         }
       } else if ( $this->attr == 'DiskBlocks' ) {
-        $string_to_eval = 'return $event->Storage()->disk_usage_blocks() '.$this->op.' '.$this->val.';';
+        $string_to_eval = 'return $event->Storage()->disk_used_blocks() '.$this->op.' '.$this->val.';';
         try {
           $ret = eval($string_to_eval);
           Debug("Evalled $string_to_eval = $ret");
