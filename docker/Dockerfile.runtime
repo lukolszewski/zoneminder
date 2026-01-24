@@ -98,6 +98,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Intel VA-API for hardware transcoding (optional layer)
+# Requires /dev/dri device mount in docker-compose.yml
+RUN sed -i 's/Components: main/Components: main contrib non-free non-free-firmware/' /etc/apt/sources.list.d/debian.sources \
+    && apt-get update && apt-get install -y --no-install-recommends \
+    intel-media-va-driver-non-free \
+    vainfo \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy .deb packages from builder
 COPY docker/packages/*.deb /tmp/packages/
 
