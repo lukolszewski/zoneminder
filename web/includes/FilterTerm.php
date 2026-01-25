@@ -427,24 +427,25 @@ class FilterTerm {
         } # end foreach Storage Area
       } else if ( $this->attr == 'EventsDiskSpace' ) {
         $storage_areas = $this->filter->get_StorageAreas();
+        $total_used = 0;
         foreach ( $storage_areas as $storage ) {
-          $used = $storage->event_disk_space();
-          Debug($used. ' '.$this->op.'? '.$this->val);
-          switch ($this->op) {
-          case '=':
-            return ($used == $this->val);
-          case '>':
-            return ($used > $this->val);
-          case '<':
-            return ($used < $this->val);
-          case '<=':
-            return ($used <= $this->val);
-          case '>=':
-            return ($used >= $this->val);
-          default:
-            Warning('Invalid op '.$this->op .' for EventsDiskSpace.');
-          }
-        } # end foreach Storage Area
+          $total_used += $storage->event_disk_space();
+        }
+        Debug($total_used. ' '.$this->op.'? '.$this->val);
+        switch ($this->op) {
+        case '=':
+          return ($total_used == $this->val);
+        case '>':
+          return ($total_used > $this->val);
+        case '<':
+          return ($total_used < $this->val);
+        case '<=':
+          return ($total_used <= $this->val);
+        case '>=':
+          return ($total_used >= $this->val);
+        default:
+          Warning('Invalid op '.$this->op .' for EventsDiskSpace.');
+        }
       } else if ( $this->attr == 'SystemLoad' ) {
         $string_to_eval = 'return getLoad() '.$this->op.' '.$this->val.';';
         try {
