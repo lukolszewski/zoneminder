@@ -97,7 +97,10 @@ sub Execute {
     my $load = getLoad();
     $sql =~ s/zmSystemLoad/$load/g;
   }
-
+  if ( $self->{HasEventsDiskSpace} ) {
+    my $events_disk_space = getEventsDiskSpace($self);
+    $sql =~ s/zmEventsDiskSpace/$events_disk_space/g;
+  }
 
   Debug("Filter::Execute SQL ($sql)");
   my $sth = $ZoneMinder::Database::dbh->prepare_cached($sql)
@@ -224,6 +227,9 @@ sub Sql {
         } elsif ( $term->{attr} eq 'SystemLoad' ) {
           $self->{Sql} .= 'zmSystemLoad';
           $self->{HasSystemLoad} = !undef;
+        } elsif ( $term->{attr} eq 'EventsDiskSpace' ) {
+          $self->{Sql} .= 'zmEventsDiskSpace';
+          $self->{HasEventsDiskSpace} = !undef;
         } else {
           $self->{Sql} .= 'E.'.$term->{attr};
         }
@@ -484,6 +490,30 @@ sub getLoad {
     Info("Load: $load");
   }
   return $load;
+}
+
+sub getEventsDiskSpace {
+  my $filter = shift;
+  my $sql;
+  my $space = 0;
+
+  if ( $$filter{Storage} ) {
+    # If filter has a StorageId term, only count that storage
+    $sql = 'SELECT COALESCE(SUM(DiskSpace), 0) FROM Events WHERE StorageId = ? AND DiskSpace IS NOT NULL';
+    my $sth = $ZoneMinder::Database::dbh->prepare_cached($sql);
+    $sth->execute($$filter{Storage}->Id());
+    ($space) = $sth->fetchrow_array();
+    $sth->finish();
+  } else {
+    # Sum across all storage areas
+    $sql = 'SELECT COALESCE(SUM(DiskSpace), 0) FROM Events WHERE DiskSpace IS NOT NULL';
+    my $sth = $ZoneMinder::Database::dbh->prepare_cached($sql);
+    $sth->execute();
+    ($space) = $sth->fetchrow_array();
+    $sth->finish();
+  }
+  Debug("EventsDiskSpace: $space bytes");
+  return $space;
 }
 
 #
